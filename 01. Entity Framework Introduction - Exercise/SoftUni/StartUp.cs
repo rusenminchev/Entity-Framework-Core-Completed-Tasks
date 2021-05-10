@@ -13,7 +13,7 @@ namespace SoftUni
         {
             SoftUniContext context = new SoftUniContext();
 
-            string result = GetEmployeesByFirstNameStartingWithSa(context);
+            string result = RemoveTown(context);
             Console.WriteLine(result);
         }
         //03.
@@ -355,8 +355,8 @@ namespace SoftUni
                     e.JobTitle,
                     e.Salary
                 })
-                .OrderBy(e=>e.FirstName)
-                .ThenBy(e=>e.LastName)
+                .OrderBy(e => e.FirstName)
+                .ThenBy(e => e.LastName)
                 .ToList();
 
             foreach (var emp in employees)
@@ -365,6 +365,76 @@ namespace SoftUni
             }
 
             return sb.ToString().TrimEnd();
+        }
+
+        //14.
+        public static string DeleteProjectById(SoftUniContext context)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            var employeeProjectToDelete = context.EmployeesProjects.Where(ep => ep.ProjectId == 2);
+
+            var projectToDelete = context
+                .Projects
+                .Where(p => p.ProjectId == 2)
+                .Single();
+
+            foreach (var emplProj in employeeProjectToDelete)
+            {
+                context.EmployeesProjects.Remove(emplProj);
+            }
+
+            context.Projects.Remove(projectToDelete);
+
+            context.SaveChanges();
+
+            context
+                .Projects
+                .Select(p => new
+                {
+                    p.Name
+                })
+                .Take(10)
+                .ToList()
+                .ForEach(p => sb.AppendLine(p.Name));
+
+            return sb.ToString().TrimEnd();
+        }
+
+        //15.
+        public static string RemoveTown(SoftUniContext context)
+        {
+            var townToRemove = context
+            .Towns
+            .Where(t => t.Name == "Seattle")
+            .Single();
+
+            var employeesInTown = context
+                .Employees
+                .Where(e => e.Address.Town == townToRemove);
+
+            foreach (var emp in employeesInTown)
+            {
+                emp.AddressId = null;
+            }
+
+            var addresesToRemove = context
+                .Addresses
+                .Where(a => a.Town.Name == "Seattle");
+
+            int counter = addresesToRemove.Count();
+
+            foreach (var adress in addresesToRemove)
+            {           
+                adress.TownId = null;
+                counter++;
+            }
+
+            context.Towns.Remove(townToRemove);
+
+            context.SaveChanges();
+
+            return $"{counter} addresses in Seattle were deleted";
         }
     }
 }
